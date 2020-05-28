@@ -1,0 +1,58 @@
+# .bashrc
+
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+	. /etc/bashrc
+fi
+
+# AWS default profile
+export AWS_ACCESS_KEY_ID=AKIAVX3NXOLW3VPB3RNF
+export AWS_SECRET_ACCESS_KEY=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
+export AWS_DEFAULT_REGION=ap-southeast-2
+export AWS_DEFAULT_PROFILE=clau-prod
+export AWS_PROFILE=clau-prod
+
+# For gcloud to work with python 2.7
+export CLOUDSDK_PYTHON=/usr/bin/python2.7
+
+# User specific aliases and functions
+#alias ssh='/usr/bin/ssh -o serveraliveinterval=100 -l dtsang'
+alias ls='ls -F --color=auto'
+alias ll='ls -l --color=auto'
+alias tmuxls='ls -l /home/dtsang/.tmuxp'
+alias add_ansible_to_tmuxp='for i in *.yml ; do cp -- "$i" "${i%.yml}_ans.yml"; done; for i in *_ans.yml ;do sed -i s/ssh/ssha/ ${i};done'
+alias ssha="ssh -i /$HOME/.ssh/ansible.id_rsa -l ansible $@" 
+
+# github
+# From: https://medium.com/toutsbrasil/how-to-manage-your-dotfiles-with-git-f7aeed8adf8b
+# Usage
+# dotfiles status
+# dotfiles add .vimrc
+# dotfiles commit -m "Add vimrc"
+# dotfiles add .bashrc
+# dotfiles commit -m "Add bashrc"
+# dotfiles push
+#alias dotfiles='/usr/bin/git --git-dir=/home/dtsang/.dotfiles/ --work-tree=/home/dtsang'
+alias dotfiles='/usr/bin/git --git-dir=. --work-tree=/home/dtsang'
+# set git status to hide untracked files
+#dotfiles config --local status.showUntrackedFiles no
+
+#alias ssh2="ssh -i /home/dtsang/.ssh/ansible.id_rsa -l ansible $@"
+#alias ssh2q="ssh -q -i /home/dtsang/.ssh/ansible.id_rsa -l ansible $@"
+#alias ssh2="ssh -i /home/csturgeon/.ssh/ansible.id_rsa -l ansible $@"
+#alias ssh2q="ssh -q -i /home/csturgeon/.ssh/ansible.id_rsa -l ansible $@"
+#alias scp2="scp -i ~/.ssh/ansible.id_rsa"
+#alias lshosts='curl -sfG http://bpvlin01-puppetdb.ad.corelogic.asia:8080/pdb/query/v4/nodes --data-urlencode 'query=["=", ["node", "active"], true]' | jq -r '.[].certname''
+#alias mast1='ssh -i $HOME/admindt.pem -l dtsang cpvlin01-elkesmast'
+#alias mast2='ssh -i $HOME/admindt.pem -l dtsang cpvlin02-elkesmast'
+#alias mast3='ssh -i $HOME/admindt.pem -l dtsang cpvlin03-elkesmast'
+#alias ship1='ssh -i $HOME/admindt.pem -l dtsang cpvlin01-elkstashship'
+#alias ship2='ssh -i $HOME/admindt.pem -l dtsang cpvlin02-elkstashship'
+#alias index1='ssh -i $HOME/admindt.pem -l dtsang cpvlin01-elkstashidx'
+#alias index2='ssh -i $HOME/admindt.pem -l dtsang cpvlin02-elkstashidx'
+#alias ch='/home/dtsang/scripts/63elasticClusterHealth|more'
+#alias ej='/home/dtsang/scripts/94elasticJstat -o'
+#alias n='/home/dtsang/scripts/57elasticListNodes'
+
+# Set vi as the command editor
+set -o vi
