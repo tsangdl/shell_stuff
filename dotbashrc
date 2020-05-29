@@ -6,8 +6,8 @@ if [ -f /etc/bashrc ]; then
 fi
 
 # AWS default profile
-export AWS_ACCESS_KEY_ID=AKIAVX3NXOLW3VPB3RNF
-export AWS_SECRET_ACCESS_KEY=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
+export AWS_ACCESS_KEY_ID=
+export AWS_SECRET_ACCESS_KEY=
 export AWS_DEFAULT_REGION=ap-southeast-2
 export AWS_DEFAULT_PROFILE=clau-prod
 export AWS_PROFILE=clau-prod
