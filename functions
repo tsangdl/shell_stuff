@@ -411,6 +411,33 @@ check_disk_space() {
 }
 
 
+# Select an option from a list
+# You will need an echo for what to do in the main before calling this function
+selectoption() {
+#echo "Do you wish to install this program?"
+select yn in "Yes" "No"; do
+    case $yn in
+        #Yes ) make install; break;;
+        Yes ) break;;
+        No ) exit;;
+    esac
+done
+}
+
+
+continue() {
+while
+   printf 'Continue? (Yes or No) ' || exit    # with the exit status of printf
+   read answer    # eof not considered as an error condition
+do
+case $answer in
+       [yY]|[yY][eE][sS]) echo Accept ; break     ;;
+           [nN]|[nN][oO]) echo Decline ; exit 0   ;;
+                       *) echo "Invalid argument" ;;
+esac
+done
+}
+
 
 
 
