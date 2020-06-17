@@ -1,0 +1,8 @@
+#!/bin/bash
+#
+
+AWS=$(which aws);awsrc=$?
+JQ=$(which jq);jqrc=$?
+REGION=ap-southeast-2
+#echo "REGION=$REGION"
+

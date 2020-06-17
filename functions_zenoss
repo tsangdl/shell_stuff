@@ -1,0 +1,221 @@
+#!/bin/bash
+#
+# https://gist.github.com/cluther/1901884
+#
+# This shell script is intended to be sourced into your shell. It adds 
+
+# Default Zenoss server settings.
+[ -z "$ZENOSS_URL" ] && export ZENOSS_URL="http://localhost:8080"
+[ -z "$ZENOSS_USERNAME" ] && export ZENOSS_USERNAME="admin"
+[ -z "$ZENOSS_PASSWORD" ] && export ZENOSS_PASSWORD="zenoss"
+
+# Generic call to make Zenoss JSON API calls easier on the shell.
+zenoss_api () {
+    ROUTER_ENDPOINT=$1
+    ROUTER_ACTION=$2
+    ROUTER_METHOD=$3
+    DATA=$4
+
+    if [ -z "${DATA}" ]; then
+        echo "Usage: zenoss_api <endpoint> <action> <method> <data>"
+        return 1
+    fi
+
+    curl \
+        -u "$ZENOSS_USERNAME:$ZENOSS_PASSWORD" \
+        -X POST \
+        -H "Content-Type: application/json" \
+        -d "{\"action\":\"$ROUTER_ACTION\",\"method\":\"$ROUTER_METHOD\",\"data\":[$DATA], \"tid\":1}" \
+        "$ZENOSS_URL/zport/dmd/$ROUTER_ENDPOINT" \
+        >/dev/null 2>&1
+}
+
+# Helper call for adding standard device types.
+zenoss_add_device() {
+    DEVICE_HOSTNAME=$1
+    DEVICE_CLASS=$2
+
+    if [ -z "$DEVICE_CLASS" ]; then
+        echo "Usage: zenoss_add_device <host> <device class>"
+        return 1
+    fi
+
+    zenoss_api device_router DeviceRouter addDevice "{\"deviceName\":\"$DEVICE_HOSTNAME\",\"deviceClass\":\"$DEVICE_CLASS\",\"collector\":\"localhost\",\"model\":true,\"title\":\"\",\"productionState\":\"1000\",\"priority\":\"3\",\"snmpCommunity\":\"\",\"snmpPort\":161,\"tag\":\"\",\"rackSlot\":\"\",\"serialNumber\":\"\",\"hwManufacturer\":\"\",\"hwProductName\":\"\",\"osManufacturer\":\"\",\"osProductName\":\"\",\"comments\":\"\"}"
+}
+
+# Helper call for renaming devices.
+zenoss_rename_device() {
+    DEVICE_UID=$1
+    DEVICE_NEWID=$2
+
+    if [ -z "$DEVICE_NEWID" ]; then
+        echo "Usage: zenoss_rename_device <uid> <newId>"
+        return 1
+    fi
+
+    zenoss_api device_router DeviceRouter renameDevice "{\"uid\":\"$DEVICE_UID\",\"newId\":\"$DEVICE_NEWID\"}"
+}
+
+# Helper call for adding UCS Managers.
+zenoss_add_ucs () {
+    UCS_HOST=$1
+    UCS_USERNAME=$2
+    UCS_PASSWORD=$3
+
+    if [ -z "$UCS_PASSWORD" ]; then
+        echo "Usage: zenoss_add_ucs <host> <username> <password>"
+        return 1
+    fi
+
+    zenoss_api ciscoucs_router CiscoUCSRouter addCiscoUCS "{\"host\":\"$UCS_HOST\",\"username\":\"$UCS_USERNAME\",\"password\":\"$UCS_PASSWORD\",\"port\":\"80\",\"useSSL\":false,\"collector\":\"localhost\"}"
+}
+
+# Helper call for adding VMware vCenters.
+zenoss_add_vcenter () {
+    VCENTER_HOST=$1
+    VCENTER_USERNAME=$2
+    VCENTER_PASSWORD=$3
+
+    if [ -z "$VCENTER_PASSWORD" ]; then
+        echo "Usage: zenoss_add_vcenter <host> <username> <password>"
+        return 1
+    fi
+
+    zenoss_api vmware_router VMwareRouter addVMwareInfrastructure "{\"id\":\"$VCENTER_HOST\",\"host\":\"$VCENTER_HOST\",\"useSsl\":true,\"username\":\"$VCENTER_USERNAME\",\"password\":\"$VCENTER_PASSWORD\",\"collector\":\"localhost\"}"
+}
+
+# Helper call for adding EMC VNX SMI-S providers.
+zenoss_add_emc_vnx () {
+    SMIS_HOST=$1
+    SMIS_PORT=$2
+    SMIS_USE_SSL=$3  # must be "true" or "false"
+    SMIS_USERNAME=$4
+    SMIS_PASSWORD=$5
+    SMIS_DEVCLASS=/Storage/EMC/VNX
+    SMIS_COLLECTOR=$6
+
+    if [ -z "$SMIS_COLLECTOR" ]; then
+        echo "Usage: zenoss_add_emc_vnx <host> <port> <ssl> <username> <password> <collector>"
+        return 1
+    fi
+
+    zenoss_api smisprovider_router SMISProviderRouter add_smisprovider "{\"ipaddress\":\"$SMIS_HOST\",\"portnumber\":\"$SMIS_PORT\",\"useSSL\":$SMIS_USE_SSL,\"username\":\"$SMIS_USERNAME\",\"userpassword\":\"$SMIS_PASSWORD\",\"devclass\":\"$SMIS_DEVCLASS\",\"collector\",\"$SMIS_COLLECTOR\"}"
+}
+
+# Helper call for adding EMC VMAX SMI-S providers.
+zenoss_add_emc_vmax () {
+    SMIS_HOST=$1
+    SMIS_PORT=$2
+    SMIS_USE_SSL=$3  # must be "true" or "false"
+    SMIS_USERNAME=$4
+    SMIS_PASSWORD=$5
+    SMIS_DEVCLASS=/Storage/EMC/VMAX
+    SMIS_COLLECTOR=$6
+
+    if [ -z "$SMIS_COLLECTOR" ]; then
+        echo "Usage: zenoss_add_emc_vmax <host> <port> <ssl> <username> <password> <collector>"
+        return 1
+    fi
+
+    zenoss_api smisprovider_router SMISProviderRouter add_smisprovider "{\"ipaddress\":\"$SMIS_HOST\",\"portnumber\":\"$SMIS_PORT\",\"useSSL\":$SMIS_USE_SSL,\"username\":\"$SMIS_USERNAME\",\"userpassword\":\"$SMIS_PASSWORD\",\"devclass\":\"$SMIS_DEVCLASS\",\"collector\",\"$SMIS_COLLECTOR\"}"
+}
+
+# Helper call for adding service organizers.
+zenoss_add_service_organizer () {
+    ORGANIZER_BASE=$1
+    ORGANIZER_NAME=$2
+
+    if [ -z "$ORGANIZER_NAME" ]; then
+        echo "Usage: zenoss_add_service_organizer <base> <name>"
+        return 1
+    fi
+    
+    zenoss_api enterpriseservices_router EnterpriseServicesRouter addOrganizer \
+        "{\"id\":\"$ORGANIZER_NAME\",\"contextUid\":\"/zport/dmd/DynamicServices$ORGANIZER_BASE\"}"
+}
+
+# Helper call for adding a service.
+zenoss_add_service () {
+    SERVICE_BASE=$1
+    SERVICE_NAME=$2
+    
+    if [ -z "$SERVICE_NAME" ]; then
+        echo "Usage: zenoss_add_service <base> <name>"
+        return 1
+    fi
+
+    zenoss_api enterpriseservices_router EnterpriseServicesRouter addNode \
+        "{\"id\":\"$SERVICE_NAME\",\"contextUid\":\"/zport/dmd/DynamicServices$SERVICE_BASE\"}"
+}
+
+# Helper call for adding an element to a service.
+zenoss_add_element_to_service () {
+    SERVICE_PATH=$1
+    ELEMENT_URL=$2
+
+    if [ -z "$ELEMENT_URL" ]; then
+        echo "Usage: zenoss_add_element_to_service <service_path> <element_url>"
+        return 1
+    fi
+
+    zenoss_api enterpriseservices_router EnterpriseServicesRouter addToDynamicService \
+        "{\"targetUid\":\"/zport/dmd/DynamicServices$SERVICE_PATH\",\"uids\":[\"$ELEMENT_URL\"]}"
+}
+
+# Helper call for adding a redundant policy to a service.
+zenoss_add_redundant_policy_to_service () {
+    SERVICE_PATH=$1
+
+    if [ -z "$SERVICE_PATH" ]; then
+        echo "Usage: zenoss_add_redundant_policy_to_service <service_path"
+        return 1
+    fi
+
+    # 100% down == down
+    zenoss_api \
+        enterpriseservices_router \
+        EnterpriseServicesRouter \
+        addStateTrigger \
+        "{\"contextUid\":\"global\",\"uid\":\"/zport/dmd/DynamicServices$SERVICE_PATH\",\"policyType\":\"Availability\",\"data\":{\"state\":\"DOWN\",\"triggerType\":\"policyPercentageTrigger\",\"threshold\":100,\"dependentState\":\"DOWN\"}}"
+
+    # 1 down == at risk
+    zenoss_api \
+        enterpriseservices_router \
+        EnterpriseServicesRouter \
+        addStateTrigger \
+        "{\"contextUid\":\"global\",\"uid\":\"/zport/dmd/DynamicServices$SERVICE_PATH\",\"policyType\":\"Availability\",\"data\":{\"state\":\"ATRISK\",\"triggerType\":\"policyThresholdTrigger\",\"threshold\":1,\"dependentState\":\"DOWN\"}}"
+}
+
+# Example usages of the bash helper functions.
+# echo "Adding UCS."
+# zenoss_add_ucs ucs1 zenoss zenoss
+
+# echo "Adding vCenter."
+# zenoss_add_vcenter vcenter1 zenoss zenoss
+
+# echo "Adding standard device."
+# zenoss_add_device n7k1 "/Network/Cisco/Nexus"
+
+
+# Extended to show adding of service organizers, services and elements to
+# services.
+
+# Service Organizers
+# zenoss_add_service_organizer "/" "Datacenters"
+# zenoss_add_service_organizer "/Datacenters" "DC1"
+# zenoss_add_service_organizer "/Datacenters/DC1" "Routers"
+
+
+# Access Routers
+# zenoss_add_service "/Datacenters/DC1/Routers" "Access Routers"
+# zenoss_add_redundant_policy_to_service "/Datacenters/DC1/Routers/Access Routers"
+
+# zenoss_add_element_to_service \
+#     "/Datacenters/DC1/Routers/services/Access Routers" \
+#     "/zport/dmd/Devices/CiscoUCS/devices/TB1-USCM/hw/fabricinterconnects/sys_switch-A"
+
+# zenoss_add_element_to_service \
+#     "/Datacenters/DC1/Routers/services/Access Routers" \
+#     "/zport/dmd/Devices/CiscoUCS/devices/TB1-USCM/hw/fabricinterconnects/sys_switch-B"
+
+# End

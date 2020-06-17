@@ -1,0 +1,11 @@
+#!/bin/bash
+#
+
+homedir='/home/dtsang'
+scriptsdir="${homedir}/scripts"
+
+#SPLUNKCLOUD=https://rpdata-corelogic.splunkcloud.com:8089/services/search/jobs/1556243448.409606/results/
+SPLUNKCLOUDURL=https://rpdata-corelogic.splunkcloud.com:8089
+#curl -k -u dt:`echo ${pw}` https://rpdata-corelogic.splunkcloud.com:8089/services/search/jobs/1556243448.409606/results/ --get -d output_mode=text
+
+

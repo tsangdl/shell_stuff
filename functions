@@ -1,0 +1,416 @@
+#!/bin/bash
+#
+# Script Description
+#
+prog=$(basename $0)
+pid=$$
+log=${prog}_${pid}.log
+static_time=$(date +'%H%M%S')
+scriptsdir='/home/dtsang/scripts'
+wrkdir='/tmp'
+
+# Start off in 'quiet' mode by default
+VERBOSE=
+# Boot mode is set if running in boot-time mode
+BOOTMODE=
+# Force mode is off by default
+FORCE=
+
+
+# Colours
+C_INFO="\033[01;32m"
+black="\033[0;30m"    
+dark_grey="\033[1;30m"
+red="\033[0;31m"    
+light_red="\033[1;31m"
+green="\033[0;32m"    
+light_green="\033[1;32m"
+orange="\033[0;33m"    
+yellow="\033[1;33m"
+blue="\033[0;34m"    
+light_blue="\033[1;34m"
+purple="\033[0;35m"    
+light_purple="\033[1;35m"
+cyan="\033[0;36m"    
+light_cyan="\033[1;36m"
+light_grey="\033[0;37m"    
+white="\033[1;37m"
+nc="\033[0m" # No Color
+
+
+# And then use them like this in your script:
+#
+# red="\033[0;31m"
+# nc="\033[0m" # No Color
+# printf "I ${red}love${nc} Stack Overflow\n"
+
+
+
+###
+# It is to die for
+die () {
+    echo "*** $@ ***" 1>&2
+    exit 1
+}
+
+
+###
+# Must be root to run this script
+areweroot () {
+
+[[ "`whoami`" != 'root' ]] && { die "You must be root to run this script" ; }
+
+# 
+# OR
+#
+#    if [ "`whoami`" != 'root' ]
+#    then
+#        echo "You must be root to run this script"
+#        exit 1
+#    fi
+}
+
+
+###
+# Test whether we are root
+#AreWeRoot () {
+#
+#    ID=`/usr/bin/id -u`
+#    test "$ID" = 0
+#    return $?
+#}
+
+
+# Exit with result code, printing a message if in verbose mode
+die () {
+    echo "$prog: " "$@" 1>&2
+    Cleanup
+    exit $RC
+}
+
+
+###
+# Print a message, but only if $VERBOSE is set
+verbose () {
+    [ "$VERBOSE" ]&& .log 6 "$@" 1>&2
+}
+
+
+###
+# Log - Log a message.  In boot mode, goes to the program log, otherwise
+# just to the screen.
+
+Log () {
+
+    if [ "$BOOTMODE" ]
+    then
+        echo "`date '+%c'` $prog: $@" >> ${BUILDLOG}
+    fi
+    echo "$prog: $@" 1>&2
+}
+
+###
+# Clean up any files we used
+Cleanup () {
+    if [ -f $FILELIST ]
+    then
+        rm -f $FILELIST
+    fi
+}
+
+
+###
+is_it_mounted () {
+    fs=$1
+    df | grep "${fs}" > /dev/null ; rc=$?
+    [ "$rc" -eq 1 ] && { die "The ${fs} file system does not exist" ; }
+}
+
+
+###
+## Exit with result code, print a message and list subcommands
+#Usage () {
+#    echo "$prog: " "$@" 1>&2
+#    cat <<EOS 1>&2
+#
+#Usage: $prog [options] <mode>
+#
+#Options:-
+#-q              Be quiet
+#-v              Be verbose
+#-f              Force mode.  Required for backouts
+#
+#Modes:-
+#set             Copy in files for this host's profile
+#backout         Backout previous "set"
+#check           Check current files against what we expect
+#boot            Boot time mode
+#start           Same as "boot"
+#
+#EOS
+#    exit 1
+#}
+#
+#
+## RotateDirectory - Roll a directory out of the way to make a backup
+## XXX Lazy version, just keep 4 generations
+#
+#RotateDirectory () {
+#    DIR="$1"
+#
+#    Verbose "Preserving previous backups..."
+#    test -d "$DIR" || Die "No such directory: $DIR"
+#    test -d "${DIR}.3" && rm -rf "${DIR}.3"
+#    test -d "${DIR}.2" && mv "${DIR}.2" "${DIR}.3"
+#    test -d "${DIR}.1" && mv "${DIR}.1" "${DIR}.2"
+#    test -d "${DIR}.0" && mv "${DIR}.0" "${DIR}.1"
+#    mv "$DIR" "${DIR}.0" || Die "Rotate of previous backups failed"
+#}
+#
+#
+## BackupFiles - Back up current files before overwriting them
+#BackupFiles () {
+#
+#
+#    # If the backup directory already exists then rotate it out of the way
+#    # to preserve previous
+#    if [ -d "$BACKUPDIR" ]
+#    then
+#        RotateDirectory "$BACKUPDIR"
+#    fi
+#
+#    # Create a fresh backup directory
+#    mkdir "$BACKUPDIR" || Die "Unable to create backup directory"
+#
+#    # Do it
+#    Verbose "Backing up existing files..."
+#    cd /
+#    cpio -pmdu $VERBOSE "$BACKUPDIR" < $FILELIST || Die "Backup failed!"
+#}
+#
+#
+## Backout - Backout to the most recent backup
+#Backout () {
+#
+#    test -d "$BACKUPDIR" || Die "There is no backup directory to back out from"
+#
+#    Verbose "Backing out with files from $BACKUPDIR"
+#
+#    ( cd $BACKUPDIR && find . -type f | cpio -pmu $VERBOSE / )
+#
+#    Verbose "Done"
+#
+#}
+
+
+
+### Main code starts here
+
+#test -x $BPNETINFO || Die "Unable to find $BPNETINFO !"
+
+
+## Parse command line
+#usage () {
+#    cat << END_OF_USAGE
+#
+#Usage: $prog
+#
+#The type will default to the index name
+#
+#Options:
+#    -h - This help message
+#END_OF_USAGE
+#}
+
+
+#############################
+## Calls
+## foo
+## foo -a bc bar quux
+## foo -x
+#
+## Results
+## $ ./t.sh
+## a: [], non-option arguments:
+## a: [bc], non-option arguments: bar quux
+## foo: [-a <arg>]
+#
+#foo()
+#{
+#    foo_usage() { echo "foo: [-a <arg>]" ; die ; }
+#
+#    local OPTIND o a OPTARG
+#    while getopts ":a:" o; do
+#        case "${o}" in
+#            a)
+#                a="${OPTARG}"
+#                ;;
+#            *)
+#                foo_usage
+#                ;;
+#        esac
+#    done
+#    shift $((OPTIND-1))
+#
+#    echo "a: [${a}], non-option arguments: $*"
+#}
+#
+#
+#############################
+# Cut this bit of code and place it in your script. Then modify to your needs
+#############################
+## shift $((OPTIND-1)) (note OPTIND is upper case) is normally found immediately after a getopts while loop. $OPTIND is the number of options found by getopts.
+## shift n
+## removes n strings from the positional parameters list. 
+## Thus shift $((OPTIND-1)) removes all the options that have been parsed by getopts from the parameters list, 
+## and so after that point, $1 will refer to the first non-option argument passed to the script.
+## 
+## shift $((OPTIND-1)) can be unsafe. To prevent unwanted word-splitting etc, all parameter expansions should be double-quoted. 
+## So the safe form for the command is shift "$((OPTIND-1))"
+##
+## getopts as a function
+#getoptions () {
+#    getoptions_usage() { echo "${prog}: [-a <arg>]" ; die ; }
+#    local OPTIND=1 OPTARG opt v q f
+#    # Set verbose level
+#    VERBOSE=6  # Default verbosity is info
+#    optv='' ; optq='' ; optf='' ; opth=''
+#    while getopts "v:" opt
+#    do
+#        case "$opt" in
+#            v) optv=v
+#               VERBOSE="${OPTARG}"
+#                ;;
+#            q) VERBOSE=
+#                ;;
+#            f) FORCE=true
+#                ;;
+#            \?|h) usage
+#                  exit 1
+#                  ;;
+#            *) die "Unrecognised option"
+#                ;;
+#        esac
+#    done
+#    shift "$((OPTIND-1))"
+#    echo "${prog}: [${prog}], non-option arguments: $*"
+#}
+
+getoptions () {
+    getoptions_usage() { echo "${prog}: [-a <arg>]" ; die ; }
+    local OPTIND=1 OPTARG opt v q f
+    while getopts "v:" opt
+    do
+        case "$opt" in
+            v) optv=v
+               VERBOSE="${OPTARG}"
+                ;;
+            \?|h) usage
+                  exit 1
+                  ;;
+            *) die "Unrecognised option"
+                ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
+}
+
+#
+#MODE="$1"
+#test -z "$MODE" && Usage "No mode specified"
+#
+#case "$MODE" in
+#    set)
+#        SetProfile
+#        ;;
+#
+#    backout)
+#        if [ ! "$FORCE" ]
+#        then
+#            Die "If you're really sure you want to back out, use the -f flag"
+#        fi
+#        Backout
+#        ;;
+#
+#    check)
+#        CheckFiles
+#        ;;
+#
+#    boot|start)
+#        BOOTMODE=true
+#        if [ -f $FLAGFILE ]
+#        then
+#            echo "bphostprofile: No action this boot"
+#        else
+#            VERBOSE=-v
+#            Verbose "Setting profile files for this server"
+#            SetProfile
+#            echo "DO NOT REMOVE" > $FLAGFILE
+#            echo "See script 'bphostprofile' for details" >> $FLAGFILE
+#            chmod 444 $FLAGFILE
+#            Verbose "Done"
+#        fi
+#        ;;
+#
+#    *)
+#        Usage "Unknown mode '$MODE'"
+#        ;;
+#esac
+#
+#
+#Cleanup
+
+# ##############################
+# Implementation of verbose mode
+#
+# From: https://stackoverflow.com/questions/8455991/elegant-way-for-verbose-mode-in-scripts
+#
+#You can simply use it like this
+#
+## verbose error
+#.log 3 "Something is wrong here"
+#
+#Which will output
+#
+#[error] Something is wrong here
+#This is so much better than the on/off way from other answers. The mapping between strings and values as vector is a nice add-on and makes it resemble the implementation one might do in python
+#
+# set verbose level to info
+__VERBOSE=7
+
+declare -A LOG_LEVELS
+# https://en.wikipedia.org/wiki/Syslog#Severity_level
+LOG_LEVELS=([0]="emerg" [1]="alert" [2]="crit" [3]="error" [4]="warning" [5]="notice" [6]="info" [7]="debug")
+.log() {
+  local LEVEL=${1}
+  shift
+  if [ ${LEVEL} -le ${__VERBOSE} ]; then
+    if [ -t 0 ]; then
+      # seems we are in an interactive shell
+      echo "[${LOG_LEVELS[$LEVEL]}]" "$@" >&2
+    else
+      # seems we are in a cron job
+      logger -p "${LOG_LEVELS[$LEVEL]}" -t "$0[$$]" -- "$*"
+    fi
+  fi
+}
+
+
+
+check_disk_space() {
+    echo "Checking disk space ... "
+    media_space_used=$(du -sk "${CARD_DIR}" | awk '{print $1}')
+    (( media_space_needed = media_space_used * 3 ))
+    files_free_space=$(df -k "${PICS}" | grep -v Filesystem | awk '{print $4}')
+    if [ "${media_space_needed}" -ge "${files_free_space}" ]
+    then
+        echo "Insufficient space to save all the files."
+        echo "You need ${media_space_needed} kb and only have ${files_free_space} kb"
+        exit 2
+    fi
+}
+
+
+
+
+

@@ -1,0 +1,83 @@
+#!/bin/bash
+#
+
+ESHOSTS=$(cat<<-'EOF'
+cpvlin06-elkesmast.ad.corelogic.asia 
+cpvlin07-elkesmast.ad.corelogic.asia 
+cpvlin19-elkesmast.ad.corelogic.asia
+cpvlin20-elkesmast.ad.corelogic.asia
+cpvlin21-elkesmast.ad.corelogic.asia
+cpvlin30-elkesmast.ad.corelogic.asia
+cpvlin31-elkesmast.ad.corelogic.asia
+EOF
+)
+#cpvlin10-elkesmast.ad.corelogic.asia 
+#cpvlin11-elkesmast.ad.corelogic.asia 
+#cpvlin12-elkesmast.ad.corelogic.asia 
+#cpvlin13-elkesmast.ad.corelogic.asia
+#cpvlin14-elkesmast.ad.corelogic.asia
+#cpvlin15-elkesmast.ad.corelogic.asia
+#cpvlin16-elkesmast.ad.corelogic.asia
+#cpvlin17-elkesmast.ad.corelogic.asia
+#cpvlin18-elkesmast.ad.corelogic.asia
+#cpvlin32-elkesmast.ad.corelogic.asia
+#cpvlin01-elkesmast.ad.corelogic.asia 
+#cpvlin02-elkesmast.ad.corelogic.asia 
+#cpvlin03-elkesmast.ad.corelogic.asia 
+#cpvlin05-elkesmast.ad.corelogic.asia 
+
+ESLB='cpvlin30-elkesmast'
+
+LSHOSTS=$(cat<<-'EOF2'
+cpvlin02-elkstashship.ad.corelogic.asia
+cpvlin03-elkstashship.ad.corelogic.asia
+EOF2
+)
+#cpvlin04-elkstashship.ad.corelogic.asia
+#cpvlin05-elkstashship.ad.corelogic.asia
+#cpvlin06-elkstashship.ad.corelogic.asia
+#cpvlin07-elkstashship.ad.corelogic.asia
+
+find_logstash_hosts() {
+
+    #ls_ship_h1="cpvlin01-elkstashship.ad.corelogic.asia"
+    ls_ship_h2="cpvlin02-elkstashship.ad.corelogic.asia"
+    ls_ship_h3="cpvlin03-elkstashship.ad.corelogic.asia"
+    #ls_ship_h4="cpvlin04-elkstashship.ad.corelogic.asia"
+    #ls_ship_h5="cpvlin05-elkstashship.ad.corelogic.asia"
+    #ls_idx_h1="cpvlin01-elkstashidx.ad.corelogic.asia"
+    #ls_idx_h2="cpvlin01-elkstashidx.ad.corelogic.asia"
+}
+
+
+find_elastic_hosts() {
+    es_cluster_name="elasticsearch-1"
+
+    # The primary host for the cluster. This host should always be there
+    eshosts=""
+
+    es_mast_h1="cpvlin01-elkesmast.ad.corelogic.asia"
+    es_mast_h2="cpvlin02-elkesmast.ad.corelogic.asia"
+    es_mast_h3="cpvlin03-elkesmast.ad.corelogic.asia"
+    es_mast_h10="cpvlin10-elkesmast.ad.corelogic.asia"
+    es_mast_h11="cpvlin11-elkesmast.ad.corelogic.asia"
+    es_mast_h12="cpvlin12-elkesmast.ad.corelogic.asia"
+    es_mast_h13="cpvlin13-elkesmast.ad.corelogic.asia"
+    es_mast_h14="cpvlin14-elkesmast.ad.corelogic.asia"
+    es_mast_h15="cpvlin15-elkesmast.ad.corelogic.asia"
+    #es_data_h1="cpvlin01-elkesdata"
+    es_data_h1="cpvlin01-elkesmast.ad.corelogic.asia"
+    #es_data_h2="cpvlin02-elkesdata"
+    es_data_h2="cpvlin02-elkesmast.ad.corelogic.asia"
+    #es_data_h3="cpvlin03-elkesdata"
+    es_data_h3="cpvlin03-elkesmast.ad.corelogic.asia"
+
+
+    for i in $(curl -XGET "http://cpvlin01-elkesmast:9200/_cat/nodes" 2>/dev/null | awk '{print $NF}'|sed '/^$/d')
+    do
+        eshosts="$eshosts ${i}"
+    done
+    [[ -z $eshosts ]] && eshosts=$es_mast_h1
+}
+
+
