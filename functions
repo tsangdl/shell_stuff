@@ -82,7 +82,7 @@ areweroot () {
 
 
 # Exit with result code, printing a message if in verbose mode
-die () {
+die2 () {
     echo "$prog: " "$@" 1>&2
     Cleanup
     exit $RC
@@ -96,11 +96,51 @@ verbose () {
 }
 
 
+# Log - Log a message.  In verbose mode, goes to the program log, otherwise
+# just to the screen.
+
+log () {
+    if [[ "${VERBOSE}" = "true" ]]
+    then
+        printf "Verbose: %s %s: %s\n" "$(date '+%c')" "${PROG}" "$@" >> ${LOG}
+    fi
+    echo "$@" 1>&2
+}
+
+
+# Print a message, but only if $VERBOSE is set
+# Use this if you want to send only to the log file
+verbose () {
+    [[ "${VERBOSE}" = 'true' ]] && echo "Verbose: $@" >>${LOG}
+}
+
+
+are_we_interactive () {
+    tty -s && echo "This shell is interactive" || echo "This shell is not interactive"
+    ##OR ##
+    #ssh dtsang@jenkins tty -s && echo "This shell is interactive" || echo "This shell is not interactive"
+}
+
+
+proceed() {
+    while
+       printf 'Proceed? (Yes or No) ' || exit    # with the exit status of printf
+       read answer    # eof not considered as an error condition
+    do
+    case $answer in
+           [yY]|[yY][eE][sS]) echo Continuing ; break  ;;
+               [nN]|[nN][oO]) echo Exiting    ; exit 0 ;;
+                           *) echo "Invalid argument"  ;;
+    esac
+    done
+}
+
+
 ###
 # Log - Log a message.  In boot mode, goes to the program log, otherwise
 # just to the screen.
 
-Log () {
+Log2 () {
 
     if [ "$BOOTMODE" ]
     then
